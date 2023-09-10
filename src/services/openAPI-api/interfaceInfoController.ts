@@ -77,6 +77,36 @@ export async function listInterfaceInfoByPageUsingGET(
   });
 }
 
+/** offlineInterface POST /api/interfaceInfo/offline */
+export async function offlineInterfaceUsingPOST(
+  body: API.InterfaceInfoIdRequest,
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseboolean>('/api/interfaceInfo/offline', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
+
+/** onlineInterface POST /api/interfaceInfo/online */
+export async function onlineInterfaceUsingPOST(
+  body: API.InterfaceInfoIdRequest,
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseboolean>('/api/interfaceInfo/online', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  });
+}
+
 /** updateInterfaceInfo POST /api/interfaceInfo/update */
 export async function updateInterfaceInfoUsingPOST(
   body: API.InterfaceInfoUpdateRequest,

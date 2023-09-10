@@ -48,6 +48,7 @@ const Login: React.FC = () => {
       if (res.data) {
         const urlParams = new URL(window.location.href).searchParams;
         history.push(urlParams.get('redirect') || '/');
+        debugger;
         setInitialState({
           loginUser: res.data
         });
@@ -179,7 +180,7 @@ const Login: React.FC = () => {
                   const result = await getFakeCaptcha({
                     phone,
                   });
-                  if (result === false) {
+                  if (result === null) {
                     return;
                   }
                   message.success('获取验证码成功！验证码为：1234');

@@ -1,5 +1,7 @@
 import type { RequestOptions } from '@@/plugin-request/request';
 import type { RequestConfig } from '@umijs/max';
+import { Alert, notification,Descriptions, Space, message } from 'antd';
+import MessageTip from './components/MessageTip/MessageTip';
 
 // 与后端约定的响应数据格式
 interface ResponseStructure {
@@ -27,12 +29,15 @@ export const requestConfig: RequestConfig = {
   ],
   // 响应拦截器
   responseInterceptors: [
-    (response) => {
+    (response:any) => {
       // 拦截响应数据，进行个性化处理
       const { data } = response as unknown as ResponseStructure;
       console.log('data', data);
       if (data.code !== 0) {
-        throw new Error(data.message);
+        notification.error({
+          message: `请求错误 ${response.status}`,
+          description: data.message,
+        });
       }
       return response;
     },

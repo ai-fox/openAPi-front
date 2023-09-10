@@ -80,6 +80,16 @@ declare namespace API {
     id?: number;
   };
 
+  type getNameByGetUsingGETParams = {
+    /** name */
+    name?: string;
+  };
+
+  type getNameByPostUsingPOSTParams = {
+    /** name */
+    name: string;
+  };
+
   type getPostByIdUsingGETParams = {
     /** id */
     id?: number;
@@ -114,6 +124,11 @@ declare namespace API {
     requestParams?: string;
     responseHeader?: string;
     url?: string;
+  };
+
+  type InterfaceInfoIdRequest = {
+    id?: number;
+    userRequestParams?: string;
   };
 
   type InterfaceInfoUpdateRequest = {
@@ -451,6 +466,4 @@ declare namespace API {
   type View = {
     contentType?: string;
   };
-
-
 }

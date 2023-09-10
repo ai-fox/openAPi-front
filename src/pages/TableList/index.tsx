@@ -1,4 +1,4 @@
-import { addRule, removeRule, rule, updateRule } from '@/services/ant-design-pro/api';
+import { addRule, removeRule, rule, updateRule, addInterface, updateInterface } from '@/services/ant-design-pro/api';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns, ProDescriptionsItemProps } from '@ant-design/pro-components';
 import {
@@ -11,10 +11,22 @@ import {
   ProTable,
 } from '@ant-design/pro-components';
 import { FormattedMessage, useIntl } from '@umijs/max';
-import { Button, Drawer, Input, message } from 'antd';
+import { Button, Drawer, Input, message, Switch } from 'antd';
 import React, { useRef, useState } from 'react';
 import type { FormValueType } from './components/UpdateForm';
-import UpdateForm from './components/UpdateForm';
+import CreateModal from './components/CreateModal'
+import type { Props } from './components/CreateModal';
+import { 
+  listInterfaceInfoByPageUsingGET,
+   listInterfaceInfoUsingGET, 
+   addInterfaceInfoUsingPOST, 
+   updateInterfaceInfoUsingPOST, 
+   deleteInterfaceInfoUsingPOST,
+   offlineInterfaceUsingPOST,
+   onlineInterfaceUsingPOST
+} from '@/services/openAPI-api/interfaceInfoController';
+import UpdateModal from './components/UpdateModal';
+import _ from 'lodash';
 
 /**
  * @en-US Add node
@@ -36,16 +48,62 @@ const handleAdd = async (fields: API.RuleListItem) => {
 };
 
 /**
+ * @en-US Add node
+ * @zh-CN 添加接口信息
+ * @param fields
+ */
+const handleInterfaceAdd = async (fields: API.InterfaceInfo) => {
+  const hide = message.loading('正在添加');
+  try {
+    await addInterface({ ...fields });
+    hide();
+    //重新刷新
+
+    message.success('添加接口成功');
+    return true;
+  } catch (error) {
+    hide();
+    message.error('添加失败，请重试!');
+    return false;
+  }
+};
+
+
+/**
  * @en-US Update node
  * @zh-CN 更新节点
  *
  * @param fields
  */
-const handleUpdate = async (fields: FormValueType) => {
+const handleUpdate = async (fields: Props) => {
   const hide = message.loading('Configuring');
   try {
     await updateRule({
       name: fields.name,
+      desc: fields.desc,
+      key: fields.key,
+    });
+    hide();
+
+    message.success('Configuration is successful');
+    return true;
+  } catch (error) {
+    hide();
+    message.error('Configuration failed, please try again!');
+    return false;
+  }
+};
+/**
+ * @en-US Update node
+ * @zh-CN 更新节点
+ *
+ * @param fields
+ */
+const handleUpdateInterface = async (fields: Props) => {
+  const hide = message.loading('更新中。。。');
+  try {
+    await updateInterface({
+      name: fields.columns.description,
       desc: fields.desc,
       key: fields.key,
     });
@@ -82,6 +140,28 @@ const handleRemove = async (selectedRows: API.RuleListItem[]) => {
     return false;
   }
 };
+/**
+ *  Delete node
+ * @zh-CN 删除接口信息
+ *
+ * @param selectedRows
+ */
+const handleRemoveInterfaceInfo = async (selectedRows: API.InterfaceInfo) => {
+  const hide = message.loading('正在删除');
+  if (!selectedRows) return true;
+  try {
+    await deleteInterfaceInfoUsingPOST({
+      body: selectedRows,
+    });
+    hide();
+    message.success('Deleted successfully and will refresh soon');
+    return true;
+  } catch (error) {
+    hide();
+    message.error('Delete failed, please try again');
+    return false;
+  }
+};
 
 const TableList: React.FC = () => {
   /**
@@ -98,8 +178,10 @@ const TableList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
 
   const actionRef = useRef<ActionType>();
-  const [currentRow, setCurrentRow] = useState<API.RuleListItem>();
-  const [selectedRowsState, setSelectedRows] = useState<API.RuleListItem[]>([]);
+  // const [currentRow, setCurrentRow] = useState<API.RuleListItem>();
+  // const [selectedRowsState, setSelectedRows] = useState<API.RuleListItem[]>([]);
+  const [currentRow, setCurrentRow] = useState<API.InterfaceInfo>();
+  const [selectedRowsState, setSelectedRows] = useState<API.InterfaceInfo[]>([]);
 
   /**
    * @en-US International configuration
@@ -109,50 +191,82 @@ const TableList: React.FC = () => {
 
   const columns: ProColumns<API.RuleListItem>[] = [
     {
-      title: (
-        <FormattedMessage
-          id="pages.searchTable.updateForm.ruleName.nameLabel"
-          defaultMessage="Rule name"
-        />
-      ),
-      dataIndex: 'name',
-      tip: 'The rule name is the unique key',
-      render: (dom, entity) => {
-        return (
-          <a
-            onClick={() => {
-              setCurrentRow(entity);
-              setShowDetail(true);
-            }}
-          >
-            {dom}
-          </a>
-        );
-      },
-    },
-    {
-      title: <FormattedMessage id="pages.searchTable.titleDesc" defaultMessage="Description" />,
-      dataIndex: 'desc',
+      title: <FormattedMessage id="pages.searchTable.titleDesc"
+        defaultMessage="接口ID" />,
+      dataIndex: 'id',
       valueType: 'textarea',
     },
     {
       title: (
         <FormattedMessage
-          id="pages.searchTable.titleCallNo"
-          defaultMessage="Number of service calls"
+          id="pages.searchTable.updateForm.ruleName.nameLabel"
+          defaultMessage="接口名称"
         />
       ),
-      dataIndex: 'callNo',
-      sorter: true,
-      hideInForm: true,
-      renderText: (val: string) =>
-        `${val}${intl.formatMessage({
-          id: 'pages.searchTable.tenThousand',
-          defaultMessage: ' 万 ',
-        })}`,
+      dataIndex: 'name',
+      tip: 'The rule name is the unique key',
+        render: (dom, entity) => {
+          return (
+            <a
+              onClick={() => {
+                setCurrentRow(entity);
+                setShowDetail(true);
+              }}
+            >
+              {dom}
+            </a>
+          );
+        },
     },
     {
-      title: <FormattedMessage id="pages.searchTable.titleStatus" defaultMessage="Status" />,
+      title: <FormattedMessage id="pages.searchTable.titleDesc"
+        defaultMessage="描述" />,
+      dataIndex: 'description',
+      valueType: 'textarea',
+    },
+    {
+      title: <FormattedMessage id="pages.searchTable.titleDesc"
+        defaultMessage="接口" />,
+      dataIndex: 'url',
+      valueType: 'textarea',
+    },
+    {
+      title: <FormattedMessage id="pages.searchTable.titleDesc"
+        defaultMessage="请求头" />,
+      dataIndex: 'requestHeader',
+      valueType: 'textarea',
+    },
+    {
+      title: <FormattedMessage id="pages.searchTable.titleDesc"
+        defaultMessage="响应头" />,
+      dataIndex: 'responseHeader',
+      valueType: 'textarea',
+    },
+    {
+      title: <FormattedMessage id="pages.searchTable.titleDesc"
+        defaultMessage="请求类型" />,
+      dataIndex: 'method',
+      valueType: 'textarea',
+    },
+    // {
+    //   title: (
+    //     <FormattedMessage
+    //       id="pages.searchTable.titleCallNo"
+    //       defaultMessage="Number of service calls"
+    //     />
+    //   ),
+    //   dataIndex: 'callNo',
+    //   sorter: true,
+    //   hideInForm: true,
+    //   renderText: (val: string) =>
+    //     `${val}${intl.formatMessage({
+    //       id: 'pages.searchTable.tenThousand',
+    //       defaultMessage: ' 万 ',
+    //     })}`,
+    // },
+    {
+      title: <FormattedMessage id="pages.searchTable.titleStatus"
+        defaultMessage="接口状态" />,
       dataIndex: 'status',
       hideInForm: true,
       valueEnum: {
@@ -160,43 +274,80 @@ const TableList: React.FC = () => {
           text: (
             <FormattedMessage
               id="pages.searchTable.nameStatus.default"
-              defaultMessage="Shut down"
+              defaultMessage="关闭"
             />
           ),
           status: 'Default',
         },
         1: {
           text: (
-            <FormattedMessage id="pages.searchTable.nameStatus.running" defaultMessage="Running" />
+            <FormattedMessage id="pages.searchTable.nameStatus.running"
+              defaultMessage="开启" />
           ),
           status: 'Processing',
         },
-        2: {
-          text: (
-            <FormattedMessage id="pages.searchTable.nameStatus.online" defaultMessage="Online" />
-          ),
-          status: 'Success',
-        },
-        3: {
-          text: (
-            <FormattedMessage
-              id="pages.searchTable.nameStatus.abnormal"
-              defaultMessage="Abnormal"
-            />
-          ),
-          status: 'Error',
-        },
       },
+    },
+    {
+      title: <FormattedMessage id="pages.searchTable.titleStatus"
+      defaultMessage="上线"/>,
+      dataIndex: 'status',
+      hideInForm: true,
+      render: (dom, entity) => {
+        if(dom===0){
+          return (
+            <Switch id="pages.searchTable.titleStatus"
+            
+            onChange={
+              async (checked,event)=>{
+                const res = await offlineInterfaceUsingPOST(entity);
+                console.log('res-->',event);
+                return false;
+            }} />
+          );
+        }else{
+          return (
+            <Switch id="pages.searchTable.titleStatus"
+            defaultChecked
+            onChange={(checked,event)=>{
+             const res = onlineInterfaceUsingPOST(entity);
+              console.log('res-->',event);
+            }} />
+          );
+        }
+    
+      },
+      // valueEnum: {
+      //   0: {
+      //     text: (
+      //       <Switch id="pages.searchTable.titleStatus"
+      //       defaultChecked
+      //       onChange={
+      //         async (checked,event)=>{
+      //           // await offlineInterfaceUsingPOST();
+      //           console.log("fasf 0 ",checked,event);
+      //       }} />
+      //     ),
+      //   },
+      //   1: {
+      //     text: (
+      //       <Switch id="pages.searchTable.titleStatus"
+      //       onChange={(checked,event)=>{
+      //           console.log("fasf 1", checked, event);
+      //       }} />
+      //       ),
+      //   },
+      // },
     },
     {
       title: (
         <FormattedMessage
           id="pages.searchTable.titleUpdatedAt"
-          defaultMessage="Last scheduled time"
+          defaultMessage="更新时间"
         />
       ),
       sorter: true,
-      dataIndex: 'updatedAt',
+      dataIndex: 'updateTime',
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
         const status = form.getFieldValue('status');
@@ -229,13 +380,18 @@ const TableList: React.FC = () => {
             setCurrentRow(record);
           }}
         >
-          <FormattedMessage id="pages.searchTable.config" defaultMessage="Configuration" />
+          <FormattedMessage id="pages.searchTable.config"
+            defaultMessage="修改" />
         </a>,
-        <a key="subscribeAlert" href="https://procomponents.ant.design/">
-          <FormattedMessage
-            id="pages.searchTable.subscribeAlert"
-            defaultMessage="Subscribe to alerts"
-          />
+         <a
+          key="config1"
+          onClick={() => {
+            handleRemoveInterfaceInfo(record);
+            setCurrentRow(record);
+          }}
+        >
+          <FormattedMessage id="pages.searchTable.config"
+            defaultMessage="删除" />
         </a>,
       ],
     },
@@ -264,7 +420,23 @@ const TableList: React.FC = () => {
             <PlusOutlined /> <FormattedMessage id="pages.searchTable.new" defaultMessage="New" />
           </Button>,
         ]}
-        request={rule}
+        request={async (params: U & {
+          pageSize?: number;
+          current?: number;
+          keyword?: string;
+        }, sort: Record<string, SortOrder>,
+          filter: Record<string, (string | number)[] | null>) => {
+          const res = await listInterfaceInfoByPageUsingGET({
+            ...params
+          });
+          if (res?.data) {
+            return ({
+              data: res?.data.records || [],
+              success: true,
+              total: res.data.total,
+            })
+          }
+        }}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => {
@@ -346,26 +518,50 @@ const TableList: React.FC = () => {
         />
         <ProFormTextArea width="md" name="desc" />
       </ModalForm>
-      <UpdateForm
-        onSubmit={async (value) => {
-          const success = await handleUpdate(value);
-          if (success) {
-            handleUpdateModalOpen(false);
-            setCurrentRow(undefined);
-            if (actionRef.current) {
-              actionRef.current.reload();
-            }
-          }
-        }}
+      <CreateModal
+        columns={columns}
         onCancel={() => {
-          handleUpdateModalOpen(false);
-          if (!showDetail) {
-            setCurrentRow(undefined);
-          }
+          handleModalOpen(false)
         }}
-        updateModalOpen={updateModalOpen}
+        visible={createModalOpen}
+        onSubmit={
+          async (columns) => {
+            const success = await addInterfaceInfoUsingPOST(columns);
+            if (success) {
+              handleUpdateModalOpen(false);
+              setCurrentRow(undefined);
+              if (actionRef.current) {
+                actionRef.current.reload();
+              }
+            }
+          }}
+      >
+      </CreateModal>
+
+/**
+      注册组件
+      */
+      <UpdateModal
+        columns={columns}
+        visible={updateModalOpen}
+        onCancel={() => {
+          handleUpdateModalOpen(false)
+        }}
+        onSubmit={
+          async (columns) => {
+            const result = await updateInterfaceInfoUsingPOST(columns);
+            if (result) {
+              //隐藏修改框
+              handleUpdateModalOpen(false);
+              setCurrentRow(undefined);
+              if (actionRef.current) {
+                actionRef.current.reload();
+              }
+            }
+          }}
         values={currentRow || {}}
       />
+
 
       <Drawer
         width={600}

@@ -69,10 +69,25 @@ export async function updateRule(options?: { [key: string]: any }) {
     ...(options || {}),
   });
 }
+/** 更新接口 PUT /api/interface */
+export async function updateInterface(options?: { [key: string]: any }) {
+  return request<API.InterfaceInfo>('/api/interface/update', {
+    method: 'POST',
+    ...(options || {}),
+  });
+}
 
 /** 新建规则 POST /api/rule */
 export async function addRule(options?: { [key: string]: any }) {
   return request<API.RuleListItem>('/api/rule', {
+    method: 'POST',
+    ...(options || {}),
+  });
+}
+
+/** 新建接口 POST /api/rule */
+export async function addInterface(options?: { [key: string]: any }) {
+  return request<API.InterfaceInfo>('/api/interfaceInfo/add', {
     method: 'POST',
     ...(options || {}),
   });
